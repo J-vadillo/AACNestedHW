@@ -1,3 +1,10 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.NoSuchElementException;
+import util.AssociativeArray;
+import java.util.Scanner;
+import util.KeyNotFoundException;
+
 /**
  * Creates a set of mappings of an AAC that has two levels,
  * one for categories and then within each category, it has
@@ -6,10 +13,17 @@
  * and updating the set of images that would be shown and handling
  * an interactions.
  * 
- * @author Catie Baker & YOUR NAME HERE
+ * @author Catie Baker & jana Vadillo
  *
  */
 public class AACMappings implements AACPage {
+
+	AssociativeArray<String,AACCategory> Mappings;
+	String currentCategory;
+
+	AACCategory DefaultCategory = new AACCategory("default");
+
+	
 	
 	/**
 	 * Creates a set of mappings for the AAC based on the provided
@@ -32,7 +46,36 @@ public class AACMappings implements AACPage {
 	 * @param filename the name of the file that stores the mapping information
 	 */
 	public AACMappings(String filename) {
+		this.Mappings = new AssociativeArray<String, AACCategory>();
+		this.currentCategory = "";
 
+		AACCategory CurrentlyAdding = DefaultCategory;
+			
+
+		try {
+			Scanner scanner = new Scanner(new File(filename));
+			
+			while (scanner.hasNextLine()) {
+				String Line = scanner.nextLine();
+				String dividedLine[] = Line.split(" ", 2);
+
+				if (!Line.startsWith(">")){
+					CurrentlyAdding = new AACCategory(dividedLine[1]);
+					try {
+						this.Mappings.set(dividedLine[0], CurrentlyAdding);
+					} catch (Exception e) {
+						System.err.println("FAILED because " + e.toString());
+					} // try/catch
+				}
+				else{
+					CurrentlyAdding.addItem(dividedLine[0].substring(1), dividedLine[1]);
+				}
+
+			}
+			scanner.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
