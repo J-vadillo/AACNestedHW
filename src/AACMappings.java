@@ -22,11 +22,12 @@ import java.io.IOException;
 public class AACMappings implements AACPage {
 
 	AssociativeArray<String, AACCategory> Mappings;
+
 	String currentCategory;
 
-	AACCategory holder = new AACCategory("holder");
+	AACCategory home;
 
-	AACCategory CurrentAAC = holder;
+	AACCategory CurrentAAC = home;
 
 	/**
 	 * Creates a set of mappings for the AAC based on the provided
@@ -51,6 +52,7 @@ public class AACMappings implements AACPage {
 	 */
 	public AACMappings(String filename) {
 		this.Mappings = new AssociativeArray<String, AACCategory>();
+		this.home = new AACCategory("home");
 		this.currentCategory = "";
 		try {
 			Scanner scanner = new Scanner(new File(filename));
@@ -58,19 +60,28 @@ public class AACMappings implements AACPage {
 			while (scanner.hasNextLine()) {
 				String Line = scanner.nextLine();
 				String dividedLine[] = Line.split(" ", 2);
+				if (dividedLine.length == 1){
+					continue;
+				}//skip lines without the propper formatting
+
+				String name = dividedLine[1];
+				String imageAddress = dividedLine[0];
 
 				if (!Line.startsWith(">")) {
-					this.CurrentAAC = new AACCategory(dividedLine[1]);
+					this.CurrentAAC = new AACCategory(name);
+					this.home.addItem(imageAddress, name);
 					try {
-						this.Mappings.set(dividedLine[0], this.CurrentAAC);
+						this.Mappings.set(imageAddress, this.CurrentAAC);
 					} catch (Exception e) {
 						System.err.println("FAILED because " + e.toString());
 					} // try/catch
 				} else {
-					this.CurrentAAC.addItem(dividedLine[0].substring(1), dividedLine[1]);
+					this.CurrentAAC.addItem(imageAddress.substring(1), name);
 				}
-
 			}
+			this.CurrentAAC = home;
+			this.currentCategory = "";
+
 			scanner.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -99,13 +110,11 @@ public class AACMappings implements AACPage {
 			} catch (KeyNotFoundException e) {
 				throw new NoSuchElementException("No Such Element in home directory");
 			} // try to get image, throwing false if not found
-			this.currentCategory = imageLoc;
+			this.currentCategory = this.home.select(imageLoc);
 			return("");
 		}
-
 		else{
 			return this.CurrentAAC.select(imageLoc);
-
 		}
 	}
 
@@ -116,18 +125,8 @@ public class AACMappings implements AACPage {
 	 *         it should return an empty array
 	 */
 	public String[] getImageLocs() {
-		String imageLocArray[];
-		imageLocArray = new String[this.Mappings.size()];
 
-		for (int i = 0; i < this.Mappings.size(); i++) {
-			try {
-				imageLocArray[i] = this.Mappings.getKey(i);
-			} catch (Exception e) {
-				System.err.println("FAILED because " + e.toString());
-			}// try catch to get the elements for each value
-		}// itterate through all possible Image Locs
-
-		return imageLocArray;
+		return this.CurrentAAC.getImageLocs();
 	}
 
 	/**
@@ -136,7 +135,7 @@ public class AACMappings implements AACPage {
 	 */
 	public void reset() {
 		this.currentCategory = "";
-		this.CurrentAAC = holder;
+		this.CurrentAAC = home;
 	}
 
 	/**
@@ -163,10 +162,13 @@ public class AACMappings implements AACPage {
 		try {
             FileWriter fWriter = new FileWriter(filename);
 			AACCategory AddingCategory;
+			String CategoryName;
 			for (int i =0;  i< this.Mappings.size(); i++){
 				String CategoryImgLoc = this.Mappings.getKey(i);
 				AddingCategory = this.Mappings.get(CategoryImgLoc);
-				fWriter.write(CategoryImgLoc + " " + AddingCategory.getCategory() + "\n");
+				CategoryName = this.home.select(CategoryImgLoc);
+
+				fWriter.write(CategoryImgLoc + " " + CategoryName + "\n");
 
 				String CategoryImgLocs[] = AddingCategory.getImageLocs();
 				for (int n = 0; n < CategoryImgLocs.length; n++){
@@ -193,6 +195,7 @@ public class AACMappings implements AACPage {
 		if (this.currentCategory == ""){
 			try{
 			this.Mappings.set(imageLoc, new AACCategory(text));
+			this.home.addItem(imageLoc, text);
 			}
 			catch (Exception e){
 				System.err.println("FAILED because " + e.toString());
